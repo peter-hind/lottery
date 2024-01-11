@@ -19,7 +19,7 @@ contract RaffleTest is Test {
     address public PLAYER = makeAddr("player");
     uint256 public constant STARTING_USER_BALANCE = 10 ether;
 
-    function setup() external {
+    function setUp() external {
         DeployRaffle deployer = new DeployRaffle();
         (raffle, helperConfig) = deployer.run();
         (
@@ -30,5 +30,26 @@ contract RaffleTest is Test {
             subscriptionId,
             callbackGasLimit
         ) = helperConfig.activeNetworkConfig();
+        vm.deal(PLAYER, STARTING_USER_BALANCE);
+    }
+
+    function testRaffleDeploysInOpenState() public view {
+        assert(raffle.getRaffleState() == Raffle.RaffleState.OPEN);
+    }
+
+    function testRaffleRevertsWithInsufficientPayment() public {
+        vm.prank(PLAYER);
+        vm.expectRevert(Raffle.Raffle__IncorrectEntranceFee.selector);
+        raffle.enterRaffle();
+    }
+
+    function testRaffleRecordsPlayer() public {
+        vm.prank(PLAYER);
+        raffle.enterRaffle{value: entranceFee}();
+        assert(raffle.getPlayer(0) == PLAYER);
+    }
+
+    function testEmitsEvent() public {
+        vm.prank(PLAYER);
     }
 }
